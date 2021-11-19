@@ -6,14 +6,17 @@ import {
   Transaction,
 } from "@solana/web3.js"
 import {
-  metaDataTokens,
-  MyKeyPair,
-  SecondTokenProgramPubKey,
-  SomeDefault1ConstantPubKey,
-  SysvarRentPubKey,
-  TokenProgramPubKey,
+  AnotherSolanArtPubKey,
+  METADATA_PROGRAM_ID,
+  MY_KEY_PAIR,
+  SomeSolanArtPubKey,
+  SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
+  SYSTEM_PROGRAM_ID,
+  SYSVAR_RENT_PUBKEY,
+  TOKEN_PROGRAM_PUBKEY,
 } from "./constants"
 const lo = require("buffer-layout")
+import BN from "bn.js"
 
 export const conn = new Connection("https://digitaleyes.genesysgo.net/")
 
@@ -27,11 +30,11 @@ async function findAssociatedTokenAddress(
 export const findZ = async (NftMintPubKey: PublicKey) => {
   const pk = await findAssociatedTokenAddress(
     [
-      MyKeyPair.publicKey.toBuffer(),
-      TokenProgramPubKey.toBuffer(),
+      MY_KEY_PAIR.publicKey.toBuffer(),
+      TOKEN_PROGRAM_PUBKEY.toBuffer(),
       NftMintPubKey.toBuffer(),
     ],
-    SecondTokenProgramPubKey
+    SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
   )
   return pk
 }
@@ -39,29 +42,66 @@ export const findZ = async (NftMintPubKey: PublicKey) => {
 export const findXTokenTemp = async (pk: PublicKey) => {
   const data = await conn.getAccountInfo(pk, "singleGossip")
   if (data) {
+    const testBlob = new lo.Blob(8, data.data)
+    const realPrice = new BN(
+      Array.from(testBlob.decode(data.data, 97))
+        .reverse()
+        .map(function (e: any) {
+          return "00".concat(e.toString(16)).slice(-2)
+        })
+        .join(""),
+      16
+    ).toNumber()
+
     const blob = new lo.Blob(32, data.data)
-    return new PublicKey(blob.decode(data.data, 65))
+    return { xTokenTemp: new PublicKey(blob.decode(data.data, 65)), realPrice }
+  } else {
+    return { xTokenTemp: null, realPrice: null }
   }
 }
 
 export const findRpk = async (nftMintPubKey: PublicKey) => {
   const uintmetadata = Uint8Array.from(Array.from("metadata").map((s) => s.charCodeAt(0)))
   const pk = await findAssociatedTokenAddress(
-    [uintmetadata, metaDataTokens.toBuffer(), nftMintPubKey.toBuffer()],
-    metaDataTokens
+    [uintmetadata, METADATA_PROGRAM_ID.toBuffer(), nftMintPubKey.toBuffer()],
+    METADATA_PROGRAM_ID
   )
   return pk
 }
 
-export const createAssociatedTokenAcc = async (
+export const getSolanartX = async (nftMintPubKey: PublicKey) => {
+  const saleToUint8 = Uint8Array.from(Array.from("sale").map((s) => s.charCodeAt(0)))
+  const x = await findAssociatedTokenAddress(
+    [saleToUint8, nftMintPubKey.toBuffer()],
+    AnotherSolanArtPubKey
+  )
+  return x
+}
+
+export const getSolanartS = async () => {
+  const escrowToUint8 = Uint8Array.from(Array.from("escrow").map((s) => s.charCodeAt(0)))
+  const S = await findAssociatedTokenAddress([escrowToUint8], AnotherSolanArtPubKey)
+  return S
+}
+
+export const getSolanartA = async (sellerAddress: PublicKey) => {
+  const nftToUint8 = Uint8Array.from(Array.from("nft").map((s) => s.charCodeAt(0)))
+  const A = await findAssociatedTokenAddress(
+    [nftToUint8, sellerAddress.toBuffer()],
+    SomeSolanArtPubKey
+  )
+  return A
+}
+
+export const createAssociatedTokenAccInstruction = (
   nftMintPubKey: PublicKey,
   zAdd: PublicKey
 ) => {
   const transInstruction = new TransactionInstruction({
-    programId: SecondTokenProgramPubKey,
+    programId: SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID,
     keys: [
       {
-        pubkey: MyKeyPair.publicKey,
+        pubkey: MY_KEY_PAIR.publicKey,
         isSigner: !0,
         isWritable: !0,
       },
@@ -71,7 +111,7 @@ export const createAssociatedTokenAcc = async (
         isWritable: !0,
       },
       {
-        pubkey: MyKeyPair.publicKey,
+        pubkey: MY_KEY_PAIR.publicKey,
         isSigner: !1,
         isWritable: !1,
       },
@@ -81,24 +121,39 @@ export const createAssociatedTokenAcc = async (
         isWritable: !1,
       },
       {
-        pubkey: SomeDefault1ConstantPubKey,
+        pubkey: SYSTEM_PROGRAM_ID,
         isSigner: !1,
         isWritable: !1,
       },
       {
-        pubkey: TokenProgramPubKey,
+        pubkey: TOKEN_PROGRAM_PUBKEY,
         isSigner: !1,
         isWritable: !1,
       },
       {
-        pubkey: SysvarRentPubKey,
+        pubkey: SYSVAR_RENT_PUBKEY,
         isSigner: !1,
         isWritable: !1,
       },
     ],
     data: Buffer.alloc(0),
   })
-  await sendAndConfirmTransaction(conn, new Transaction().add(transInstruction), [
-    MyKeyPair,
-  ])
+  return transInstruction
+}
+
+export const tryBuyingToken = async (
+  assocTokenInstruction: TransactionInstruction,
+  buyTransInstruction: TransactionInstruction
+) => {
+  try {
+    const trans = await sendAndConfirmTransaction(
+      conn,
+      new Transaction().add(assocTokenInstruction).add(buyTransInstruction),
+      [MY_KEY_PAIR]
+    )
+    return trans
+  } catch {
+    console.log("Error sending transaction due to Solana Errors. Retrying...")
+    return null
+  }
 }

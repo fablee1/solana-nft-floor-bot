@@ -1,42 +1,47 @@
-import {
-  PublicKey,
-  TransactionInstruction,
-  sendAndConfirmTransaction,
-  Transaction,
-} from "@solana/web3.js"
+import { PublicKey, TransactionInstruction } from "@solana/web3.js"
 import {
   AnotherConstantPubKey,
   EscrowProgramPubKey,
   EscrowTaxRecipient,
-  MyKeyPair,
-  SomeDefault1ConstantPubKey,
-  TokenProgramPubKey,
+  MY_KEY_PAIR,
+  SYSTEM_PROGRAM_ID,
+  TOKEN_PROGRAM_PUBKEY,
 } from "./constants"
-import { conn, createAssociatedTokenAcc, findRpk, findXTokenTemp, findZ } from "./utils"
+import {
+  createAssociatedTokenAccInstruction,
+  findRpk,
+  findXTokenTemp,
+  findZ,
+  tryBuyingToken,
+} from "./utils"
 
 export const buyDE = async ({
   pk,
   owner,
   mint,
   creator,
+  price,
 }: {
   pk: string
   owner: string
   mint: string
   creator: string
+  price: number
 }) => {
   try {
     const z = await findZ(new PublicKey(mint))
 
-    const xTokenTemp = await findXTokenTemp(new PublicKey(pk))
+    const { xTokenTemp, realPrice } = await findXTokenTemp(new PublicKey(pk))
+
+    if (realPrice !== price) {
+      return null
+    }
 
     if (xTokenTemp) {
       const r = await findRpk(new PublicKey(mint))
 
-      await createAssociatedTokenAcc(new PublicKey(mint), z)
-
       const keys = [
-        { pubkey: MyKeyPair.publicKey, isSigner: !0, isWritable: !1 },
+        { pubkey: MY_KEY_PAIR.publicKey, isSigner: !0, isWritable: !1 },
         { pubkey: z, isSigner: !1, isWritable: !0 },
         { pubkey: xTokenTemp, isSigner: !1, isWritable: !0 },
         { pubkey: new PublicKey(owner), isSigner: !1, isWritable: !0 },
@@ -44,8 +49,8 @@ export const buyDE = async ({
         { pubkey: EscrowTaxRecipient, isSigner: !1, isWritable: !0 },
         { pubkey: new PublicKey(mint), isSigner: !1, isWritable: !0 },
         { pubkey: r, isSigner: !1, isWritable: !0 },
-        { pubkey: TokenProgramPubKey, isSigner: !1, isWritable: !1 },
-        { pubkey: SomeDefault1ConstantPubKey, isSigner: !1, isWritable: !1 },
+        { pubkey: TOKEN_PROGRAM_PUBKEY, isSigner: !1, isWritable: !1 },
+        { pubkey: SYSTEM_PROGRAM_ID, isSigner: !1, isWritable: !1 },
         { pubkey: AnotherConstantPubKey, isSigner: !1, isWritable: !1 },
         { pubkey: new PublicKey(creator), isSigner: !1, isWritable: !0 },
       ]
@@ -53,14 +58,24 @@ export const buyDE = async ({
       const transInstruction = new TransactionInstruction({
         programId: EscrowProgramPubKey,
         keys: keys,
-        data: Uint8Array.from([1, 1, 0, 0, 0, 0, 0, 0, 0]) as any,
+        data: Uint8Array.from([1, 1, 0, 0, 0, 0, 0, 0, 0]) as Buffer,
       })
 
-      await sendAndConfirmTransaction(conn, new Transaction().add(transInstruction), [
-        MyKeyPair,
-      ])
+      const assocTokenAccInstruction = createAssociatedTokenAccInstruction(
+        new PublicKey(mint),
+        z
+      )
 
-      console.log("Successfully bought GT!")
+      let trans = null
+      while (!trans) {
+        trans = await tryBuyingToken(assocTokenAccInstruction, transInstruction)
+      }
+
+      console.log(
+        `[Digital Eyes] Successfully bought GT for ${
+          price / Math.pow(10, 9)
+        } SOL! TX: ${trans}`
+      )
     }
   } catch (err) {
     console.log(err)
