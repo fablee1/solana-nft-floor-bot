@@ -4,6 +4,8 @@ Floor sweeper is a bot which finds the cheapest nft of your desired collection a
 
 ## Usage
 
+Add your private key in base58 format to environmental variables like this `MY_PRIV_KEY=YOUR_PRIVATE_KEY`
+
 In index.ts you will find a configuration section.
 
 If you dont plan to use some of the exchanges you can leave the collection name from the url empty
