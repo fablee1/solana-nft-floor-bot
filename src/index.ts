@@ -1,16 +1,11 @@
 import schedule from "node-schedule"
 import { buyDE } from "./buyDE"
 import { buySA } from "./buySA"
+import { cronTime, exchangesToUse } from "./config"
 import { getCheapestOnDE, getCheapestOnSA } from "./fetcher"
+import { tryBuyingToken } from "./utils"
 
-// Configurations, change as needed
-const exchangesToUse = ["SA"] // DE for digital eyes, SA for solanart
-const cronTime = "*/30 * * * *" // Set your preferred cron schedule
-export const DE_COLLECTION_NAME = "Bothered%20Otters%20Golden%20Tickets" // Collection name in url (Digital Eyes)
-export const SA_COLLECTION_NAME = "botheredotters" // Collection name in url (SolanArt)
-
-// Main job starts here
-schedule.scheduleJob(cronTime, async () => {
+const main = async () => {
   const offers: { [key: string]: any } = {}
 
   await Promise.all(
@@ -35,6 +30,7 @@ schedule.scheduleJob(cronTime, async () => {
 
   const cheapestOfferData = cheapestOffer[1]
 
+  let instructions = null
   switch (cheapestOffer[0]) {
     case "DE":
       const neededOptions = {
@@ -44,10 +40,10 @@ schedule.scheduleJob(cronTime, async () => {
         creator: cheapestOfferData.creators[0].Address,
         price: cheapestOfferData.price,
       }
-      await buyDE(neededOptions)
+      instructions = await buyDE(neededOptions)
       break
     case "SA":
-      await buySA({
+      instructions = await buySA({
         escrowAdd: cheapestOfferData.escrowAdd,
         owner: cheapestOfferData.seller_address,
         mint: cheapestOfferData.token_add,
@@ -56,5 +52,47 @@ schedule.scheduleJob(cronTime, async () => {
       break
     default:
       console.log("No exchange matched for cheapest offer!")
+  }
+
+  if (instructions) {
+    let timesToTry = 3
+    let trans = null
+    while (timesToTry > 0) {
+      timesToTry--
+      trans = await tryBuyingToken(
+        instructions.assocTokenAccInstruction,
+        instructions.transInstruction
+      )
+    }
+    if (trans) {
+      console.log(
+        `[${
+          cheapestOffer[0] === "DE"
+            ? "Digital Eyes"
+            : cheapestOffer[0] === "SA"
+            ? "SolanArt"
+            : "Uknown"
+        }] Successfully bought GT for ${
+          cheapestOffer[0] === "SA"
+            ? cheapestOfferData[1].price * Math.pow(10, 9)
+            : cheapestOfferData[1].price
+        } SOL! TX: ${trans}`
+      )
+      return true
+    } else {
+      console.log("Couldnt buy cheapest one, retrying...")
+      return false
+    }
+  } else {
+    console.log("Problem creating instructions.")
+    return false
+  }
+}
+
+// Main job starts here
+schedule.scheduleJob(cronTime, async () => {
+  let bought = false
+  while (!bought) {
+    bought = await main()
   }
 })

@@ -78,12 +78,14 @@ export const buySA = async ({
       ) as Buffer,
     })
 
-    let trans = null
-    while (!trans) {
-      trans = await tryBuyingToken(assocTokenAccInstruction, transInstruction)
-    }
+    return { transInstruction, assocTokenAccInstruction }
 
-    console.log(`[SolanArt] Successfully bought GT for ${price} SOL! TX: ${trans}`)
+    // let trans = null
+    // while (!trans) {
+    //   trans = await tryBuyingToken(assocTokenAccInstruction, transInstruction)
+    // }
+
+    // console.log(`[SolanArt] Successfully bought GT for ${price} SOL! TX: ${trans}`)
   } catch (err) {
     console.log(err)
   }

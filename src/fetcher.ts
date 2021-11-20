@@ -1,5 +1,5 @@
 import axios from "axios"
-import { DE_COLLECTION_NAME, SA_COLLECTION_NAME } from "."
+import { DE_COLLECTION_NAME, SA_COLLECTION_NAME } from "./config"
 
 const DE = axios.create({
   baseURL: "https://us-central1-digitaleyes-prod.cloudfunctions.net",

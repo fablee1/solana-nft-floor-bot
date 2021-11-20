@@ -66,16 +66,18 @@ export const buyDE = async ({
         z
       )
 
-      let trans = null
-      while (!trans) {
-        trans = await tryBuyingToken(assocTokenAccInstruction, transInstruction)
-      }
+      return { transInstruction, assocTokenAccInstruction }
 
-      console.log(
-        `[Digital Eyes] Successfully bought GT for ${
-          price / Math.pow(10, 9)
-        } SOL! TX: ${trans}`
-      )
+      // let trans = null
+      // while (!trans) {
+      //   trans = await tryBuyingToken(assocTokenAccInstruction, transInstruction)
+      // }
+
+      // console.log(
+      //   `[Digital Eyes] Successfully bought GT for ${
+      //     price / Math.pow(10, 9)
+      //   } SOL! TX: ${trans}`
+      // )
     }
   } catch (err) {
     console.log(err)
