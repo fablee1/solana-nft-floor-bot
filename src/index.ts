@@ -57,32 +57,32 @@ const main = async () => {
   if (instructions) {
     let timesToTry = 3
     let trans = null
+
     while (timesToTry > 0) {
       timesToTry--
       trans = await tryBuyingToken(
         instructions.assocTokenAccInstruction,
         instructions.transInstruction
       )
+      if (trans) {
+        console.log(
+          `[${
+            cheapestOffer[0] === "DE"
+              ? "Digital Eyes"
+              : cheapestOffer[0] === "SA"
+              ? "SolanArt"
+              : "Uknown"
+          }] Successfully bought GT for ${
+            cheapestOffer[0] === "SA"
+              ? cheapestOfferData.price
+              : cheapestOfferData.price / Math.pow(10, 9)
+          } SOL! TX: ${trans}`
+        )
+        return true
+      }
     }
-    if (trans) {
-      console.log(
-        `[${
-          cheapestOffer[0] === "DE"
-            ? "Digital Eyes"
-            : cheapestOffer[0] === "SA"
-            ? "SolanArt"
-            : "Uknown"
-        }] Successfully bought GT for ${
-          cheapestOffer[0] === "SA"
-            ? cheapestOfferData.price * Math.pow(10, 9)
-            : cheapestOfferData.price
-        } SOL! TX: ${trans}`
-      )
-      return true
-    } else {
-      console.log("Couldnt buy cheapest one, retrying...")
-      return false
-    }
+    console.log("Couldnt buy cheapest one, retrying...")
+    return false
   } else {
     console.log("Problem creating instructions.")
     return false
