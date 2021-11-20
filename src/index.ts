@@ -74,8 +74,8 @@ const main = async () => {
             : "Uknown"
         }] Successfully bought GT for ${
           cheapestOffer[0] === "SA"
-            ? cheapestOfferData[1].price * Math.pow(10, 9)
-            : cheapestOfferData[1].price
+            ? cheapestOfferData.price * Math.pow(10, 9)
+            : cheapestOfferData.price
         } SOL! TX: ${trans}`
       )
       return true
