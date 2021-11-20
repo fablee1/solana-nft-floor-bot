@@ -5,6 +5,8 @@ import { cronTime, exchangesToUse } from "./config"
 import { getCheapestOnDE, getCheapestOnSA } from "./fetcher"
 import { tryBuyingToken } from "./utils"
 
+console.error = function () {}
+
 const main = async () => {
   const offers: { [key: string]: any } = {}
 
@@ -56,11 +58,10 @@ const main = async () => {
 
   if (instructions) {
     let timesToTry = 3
-    let trans = null
 
     while (timesToTry > 0) {
       timesToTry--
-      trans = await tryBuyingToken(
+      const trans = await tryBuyingToken(
         instructions.assocTokenAccInstruction,
         instructions.transInstruction
       )
@@ -81,6 +82,7 @@ const main = async () => {
         return true
       }
     }
+
     console.log("Couldnt buy cheapest one, retrying...")
     return false
   } else {
@@ -91,8 +93,12 @@ const main = async () => {
 
 // Main job starts here
 schedule.scheduleJob(cronTime, async () => {
+  console.log(`${new Date().toLocaleTimeString()} | Starting floor buying proccess.`)
+
   let bought = false
   while (!bought) {
     bought = await main()
   }
+
+  console.log(`${new Date().toLocaleTimeString()} | Finished buying process.`)
 })
