@@ -32,6 +32,8 @@ const main = async () => {
 
   const cheapestOfferData = cheapestOffer[1]
 
+  if (!cheapestOfferData) return false
+
   let instructions = null
   switch (cheapestOffer[0]) {
     case "DE":
@@ -72,7 +74,7 @@ const main = async () => {
               ? "Digital Eyes"
               : cheapestOffer[0] === "SA"
               ? "SolanArt"
-              : "Uknown"
+              : "Unknown"
           }] Successfully bought GT for ${
             cheapestOffer[0] === "SA"
               ? cheapestOfferData.price
