@@ -152,8 +152,17 @@ export const tryBuyingToken = async (
       [MY_KEY_PAIR]
     )
     return trans
-  } catch (e) {
-    console.log("Error sending transaction due to Solana Errors. Retrying...")
-    return null
+  } catch {
+    try {
+      const trans = await sendAndConfirmTransaction(
+        conn,
+        new Transaction().add(buyTransInstruction),
+        [MY_KEY_PAIR]
+      )
+      return trans
+    } catch {
+      console.log("Error sending transaction due to Solana Errors. Retrying...")
+      return null
+    }
   }
 }
