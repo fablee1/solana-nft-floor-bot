@@ -44,6 +44,11 @@ export const buySA = async ({
       return
     }
 
+    const updateAuthority =
+      process.env.BUY_TYPE === "NFT"
+        ? "6SwTAKo4UXPCGEWC1DZa3uiSxAyNXJju1xip3rrHLnWe"
+        : "F6kf6G18RQ4d5e4pmHF2YuEoY1procYD9qAVp4XFnCPi"
+
     const keys = [
       { pubkey: MY_KEY_PAIR.publicKey, isSigner: !0, isWritable: !1 },
       { pubkey: O, isSigner: !1, isWritable: !0 },
@@ -62,7 +67,7 @@ export const buySA = async ({
       { pubkey: SomeSolanArtPubKey, isSigner: !1, isWritable: !1 },
       { pubkey: SYSTEM_PROGRAM_ID, isSigner: !1, isWritable: !1 },
       {
-        pubkey: new PublicKey("F6kf6G18RQ4d5e4pmHF2YuEoY1procYD9qAVp4XFnCPi"),
+        pubkey: new PublicKey(updateAuthority),
         isSigner: !1,
         isWritable: !0,
       },
