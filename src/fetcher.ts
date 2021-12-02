@@ -23,6 +23,14 @@ export const getCheapestOnDE = async () => {
 export const getCheapestOnSA = async () => {
   try {
     const { data } = await SA.get(`/nft_for_sale?collection=${SA_COLLECTION_NAME}`)
+    const typeOfBuy = process.env.BUY_TYPE
+    if (typeOfBuy) {
+      if (typeOfBuy === "TICKET") {
+        return data.find((listing: any) => listing.name.toLowerCase().includes("ticket"))
+      } else if (typeOfBuy === "NFT") {
+        return data.find((listing: any) => !listing.name.toLowerCase().includes("ticket"))
+      }
+    }
     return data[0]
   } catch (err) {
     console.log(err)

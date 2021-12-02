@@ -10,10 +10,10 @@ import {
   createAssociatedTokenAccInstruction,
   findRpk,
   findZ,
+  getPriceSA,
   getSolanartA,
   getSolanartS,
   getSolanartX,
-  tryBuyingToken,
 } from "./utils"
 import BN from "bn.js"
 
@@ -21,12 +21,10 @@ export const buySA = async ({
   escrowAdd,
   owner,
   mint,
-  price,
 }: {
   escrowAdd: string
   owner: string
   mint: string
-  price: number
 }) => {
   try {
     const nftMintPubKey = new PublicKey(mint)
@@ -40,6 +38,11 @@ export const buySA = async ({
     const C = await findRpk(nftMintPubKey)
 
     const A = await getSolanartA(new PublicKey(owner))
+
+    const realPrice = await getPriceSA(x)
+    if (!realPrice) {
+      return
+    }
 
     const keys = [
       { pubkey: MY_KEY_PAIR.publicKey, isSigner: !0, isWritable: !1 },
@@ -73,9 +76,7 @@ export const buySA = async ({
     const transInstruction = new TransactionInstruction({
       programId: AnotherSolanArtPubKey,
       keys: keys,
-      data: Uint8Array.from(
-        [5].concat(new BN(price * Math.pow(10, 9)).toArray("le", 8))
-      ) as Buffer,
+      data: Uint8Array.from([5].concat(new BN(realPrice).toArray("le", 8))) as Buffer,
     })
 
     return { transInstruction, assocTokenAccInstruction }

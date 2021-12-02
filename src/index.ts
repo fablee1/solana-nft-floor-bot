@@ -51,7 +51,6 @@ const main = async () => {
         escrowAdd: cheapestOfferData.escrowAdd,
         owner: cheapestOfferData.seller_address,
         mint: cheapestOfferData.token_add,
-        price: cheapestOfferData.price,
       })
       break
     default:

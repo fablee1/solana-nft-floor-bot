@@ -15,10 +15,30 @@ import {
   SYSVAR_RENT_PUBKEY,
   TOKEN_PROGRAM_PUBKEY,
 } from "./constants"
+import { Blob, struct, u8 } from "@solana/buffer-layout"
 const lo = require("buffer-layout")
 import BN from "bn.js"
 
 export const conn = new Connection("https://digitaleyes.genesysgo.net/")
+
+// Utils for decoding
+const blob = (size: number, data: string) => new Blob(size, data)
+
+const structSA = struct([
+  u8("isInitialized"),
+  blob(32, "initializerPubkey"),
+  blob(32, "initializerTempTokenAccountPubkey"),
+  blob(8, "expectedAmount"),
+])
+
+const structDE = struct([
+  u8("isInitialized"),
+  blob(32, "initializerPubkey"),
+  blob(32, "mintPubkey"),
+  blob(32, "initializerTempTokenAccountPubkey"),
+  blob(8, "expectedAmount"),
+])
+// utils for decoding
 
 async function findAssociatedTokenAddress(
   data: Uint8Array[] | Buffer[],
@@ -37,6 +57,14 @@ export const findZ = async (NftMintPubKey: PublicKey) => {
     SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID
   )
   return pk
+}
+
+export const getPriceSA = async (pk: PublicKey) => {
+  const data = await conn.getAccountInfo(pk, "singleGossip")
+  if (data) {
+    const decoded = structSA.decode(data.data)
+    return new BN(decoded.expectedAmount, 10, "le").toNumber()
+  }
 }
 
 export const findXTokenTemp = async (pk: PublicKey) => {
