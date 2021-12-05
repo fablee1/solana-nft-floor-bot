@@ -194,3 +194,9 @@ export const tryBuyingToken = async (
     }
   }
 }
+
+export const percentageChange = (oldPrice: number, newPrice: number) => {
+  const diff = newPrice - oldPrice
+  const percentDiff = (diff / oldPrice) * 100
+  return Math.abs(percentDiff)
+}

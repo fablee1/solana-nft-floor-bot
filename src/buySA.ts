@@ -14,19 +14,29 @@ import {
   getSolanartA,
   getSolanartS,
   getSolanartX,
+  percentageChange,
 } from "./utils"
 import BN from "bn.js"
+import { MAXIMUM_PRICE_PER_BUY } from "./config"
 
 export const buySA = async ({
   escrowAdd,
   owner,
   mint,
+  price,
 }: {
   escrowAdd: string
   owner: string
   mint: string
+  price: number
 }) => {
   try {
+    // Maximum price per buy, if more than maximum dont buy
+    if (price > MAXIMUM_PRICE_PER_BUY) {
+      return
+    }
+
+    // Get needed addresses for instructions
     const nftMintPubKey = new PublicKey(mint)
 
     const O = await findZ(nftMintPubKey)
@@ -39,8 +49,17 @@ export const buySA = async ({
 
     const A = await getSolanartA(new PublicKey(owner))
 
+    // Get real price from blockchain
     const realPrice = await getPriceSA(x)
     if (!realPrice) {
+      return
+    }
+
+    // Here we get the percentage change between the endpoint price and blockchain price,
+    // since solanart and other exchanges have a certain time while updating their backend,
+    // so you could get in a situation where the price got changed right before bot buying
+    const priceChangePercent = percentageChange(price * Math.pow(10, 9), realPrice)
+    if (priceChangePercent > 5) {
       return
     }
 
@@ -85,13 +104,6 @@ export const buySA = async ({
     })
 
     return { transInstruction, assocTokenAccInstruction }
-
-    // let trans = null
-    // while (!trans) {
-    //   trans = await tryBuyingToken(assocTokenAccInstruction, transInstruction)
-    // }
-
-    // console.log(`[SolanArt] Successfully bought GT for ${price} SOL! TX: ${trans}`)
   } catch (err) {
     console.log(err)
   }
