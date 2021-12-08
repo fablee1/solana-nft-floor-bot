@@ -76,7 +76,7 @@ export const buySA = async ({
       { pubkey: x, isSigner: !1, isWritable: !0 },
       { pubkey: TOKEN_PROGRAM_PUBKEY, isSigner: !1, isWritable: !1 },
       {
-        pubkey: new PublicKey("E6dkaYhqbZN3a1pDrdbajJ9D8xA66LBBcjWi6dDNAuJH"),
+        pubkey: new PublicKey("39fEpihLATXPJCQuSiXLUSiCbGchGYjeL39eyXh3KbyT"),
         isSigner: !1,
         isWritable: !0,
       },
